@@ -5,7 +5,7 @@ Unsupervised Domain Adaptation
 ## Folder List
 1. Dataset
 
-> [Domain Adaptation data 파일 저장 및 create dataset]
+[Domain Adaptation data 파일 저장 및 create dataset]
 
 > * [1] Office-Home
 
@@ -17,8 +17,8 @@ Unsupervised Domain Adaptation
 
 2. Loss Function
 
-> [Experiment for Proposed loss function]
+[Experiment for Proposed loss function]
 
 3. Proposed
 
-> [Experiment for Proposed method & architecture]
+[Experiment for Proposed method & architecture]
