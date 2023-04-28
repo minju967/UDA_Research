@@ -7,13 +7,13 @@ Unsupervised Domain Adaptation
 
 > [Domain Adaptation data 파일 저장 및 create dataset]
 
->   > [1] Office-Home
+> * [1] Office-Home
 
->   > [2] VisDA-2017
+> * [2] VisDA-2017
 
->   > [3] DomainNet
+> * [3] DomainNet
 
->   > [4] Office-31
+> * [4] Office-31
 
 2. Loss Function
 
