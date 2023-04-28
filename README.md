@@ -15,10 +15,10 @@ Unsupervised Domain Adaptation
 
     [4] Office-31
 
-2. Loss Function
+### 2. Loss Function
 
   [Experiment for Proposed loss function]
 
-3. Proposed
+### 3. Proposed
 
   [Experiment for Proposed method & architecture]
