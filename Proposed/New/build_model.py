@@ -45,12 +45,12 @@ class DRANet_Encoder(nn.Module):
             nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1, bias=True),
             nn.ReLU(True),
         )
-        self.Linear = nn.Linear(64*112*112, 64)
+        self.Linear = nn.Linear(64*112*112, 256)
         
 
     def forward(self, x):
         # f_map: [batch, 64, 112, 112]
-        # global vector: [batch, 64]
+        # global vector: [batch, 256]
         f_map = self.model(x) 
         vector = self.Linear(f_map.view(x.shape[0], -1))
         return f_map, vector

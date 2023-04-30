@@ -23,7 +23,8 @@ class DeepInfoMaxLoss(nn.Module):
         self.gamma = gamma
 
     def forward(self, y, M, M_prime):
-
+        # print(y.size())   # [batch, 64]
+        # print(M.size())   # [batch, 128, 26, 26]
         # see appendix 1A of https://arxiv.org/pdf/1808.06670.pdf
 
         y_exp = y.unsqueeze(-1).unsqueeze(-1)
@@ -52,7 +53,7 @@ class DeepInfoMaxLoss(nn.Module):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='DeepInfomax pytorch')
-    parser.add_argument('--batch_size', default=64, type=int, help='batch_size')
+    parser.add_argument('--batch_size', default=32, type=int, help='batch_size')
     args = parser.parse_args()
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -61,7 +62,7 @@ if __name__ == '__main__':
     # image size 3, 32, 32
     # batch size must be an even number
     # shuffle must be True
-    cifar_10_train_dt = CIFAR10(r'c:\data\tv',  download=True, transform=ToTensor())
+    cifar_10_train_dt = CIFAR10(r'c:\data\tv',  download=False, transform=ToTensor())
     cifar_10_train_l = DataLoader(cifar_10_train_dt, batch_size=batch_size, shuffle=True, drop_last=True,
                                   pin_memory=torch.cuda.is_available())
 
@@ -70,8 +71,8 @@ if __name__ == '__main__':
     optim = Adam(encoder.parameters(), lr=1e-4)
     loss_optim = Adam(loss_fn.parameters(), lr=1e-4)
 
-    epoch_restart = 860
-    root = Path(r'c:\data\deepinfomax\models\run5')
+    epoch_restart = 0
+    root = None
 
     if epoch_restart is not None and root is not None:
         enc_file = root / Path('encoder' + str(epoch_restart) + '.wgt')
@@ -79,7 +80,7 @@ if __name__ == '__main__':
         encoder.load_state_dict(torch.load(str(enc_file)))
         loss_fn.load_state_dict(torch.load(str(loss_file)))
 
-    for epoch in range(epoch_restart + 1, 1000):
+    for epoch in range(0, 1):
         batch = tqdm(cifar_10_train_l, total=len(cifar_10_train_dt) // batch_size)
         train_loss = []
         for x, target in batch:

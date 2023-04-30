@@ -21,10 +21,10 @@ class Encoder(nn.Module):
 
     def forward(self, x):
         h = F.relu(self.c0(x))
-        features = F.relu(self.b1(self.c1(h)))
+        features = F.relu(self.b1(self.c1(h)))  # C(x)
         h = F.relu(self.b2(self.c2(features)))
         h = F.relu(self.b3(self.c3(h)))
-        encoded = self.l1(h.view(x.shape[0], -1))
+        encoded = self.l1(h.view(x.shape[0], -1))   # E(x)
         return encoded, features
 
 
