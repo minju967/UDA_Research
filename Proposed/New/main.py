@@ -12,11 +12,12 @@ def get_args():
     project_path = Path(os.getcwd()).parent.parent
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-E','--epoch', type=int, default=1)
+    parser.add_argument('-E','--epoch', type=int, default=10)
+    parser.add_argument('-i','--iter', type=int, default=1000)
     parser.add_argument('-D','--datasets', type=str, nargs='+', default='A', required=False, help='clf: A/CA/P/R (Art/Clipart/Product/Real World) ')
 
     parser.add_argument('--workers', type=int, default=0)
-    parser.add_argument('--batch', type=int, default=32)
+    parser.add_argument('--batch', type=int, default=64)
     parser.add_argument('--imsize', type=int, default=224, help='the height of the input image')
     parser.add_argument('--project', type=str, default=project_path)
 
@@ -58,7 +59,7 @@ def get_dataset(args, d):
 
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch,
                                                    shuffle=True, num_workers=int(workers), pin_memory=True)
-    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch*4,
+    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch,
                                                    shuffle=False, num_workers=int(workers))
 
     return train_dataloader, test_dataloader
@@ -74,6 +75,7 @@ def main(args):
     
     # build trainer
     trainer = Trainer(args, train_loader, test_loader)
+    # trainer.set_networks()
     trainer.train()
     # pass
 
