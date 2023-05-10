@@ -22,3 +22,6 @@ Unsupervised Domain Adaptation
 ### 3. Proposed
 
   Experiment for Proposed method & architecture
+  1. DRANet_mine
+      DRANet에서 출력한 content, style latent사이의 Mutual Information을 측정하기 위해 
+      [MINE: Mutual Information Neural Estimator](https://github.com/gtegner/mine-pytorch)를 적용해본다.
