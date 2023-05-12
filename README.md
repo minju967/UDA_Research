@@ -28,11 +28,12 @@ Unsupervised Domain Adaptation
       [MINE: Mutual Information Neural Estimator](https://github.com/gtegner/mine-pytorch)를 적용해본다.
       
       23-5-13: statistics network 적용 및 loss 변형.
-       MINE의 경우, 두 변수 X, Z사이의 distance가 loss가 된다 (-t + second_term). 
+      
+         MINE의 경우, 두 변수 X, Z사이의 distance가 loss가 된다 (-t + second_term). 
 
-       DRANet의 경우, 두 변수 Content, Style은 distance가 클수록 서로간의 상호정보량이 적다는 것을 의미한다.
+         DRANet의 경우, 두 변수 Content, Style은 distance가 클수록 서로간의 상호정보량이 적다는 것을 의미한다.
 
-       따라서, distanc가 낮을수록 높은 loss값을 높을수록 낮은 loss값을 계산한다.
+         따라서, distanc가 낮을수록 높은 loss값을 높을수록 낮은 loss값을 계산한다.
       
 ### 4. Experiment 정리
 
