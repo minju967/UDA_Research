@@ -17,6 +17,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     ## Common Parameters ##
+    parser.add_argument('-T', '--task', required=True, help='clf | seg')  # Classification or Segmentation
     parser.add_argument('-D','--datasets', type=str, nargs='+', required=True, help='clf: M/MM/U (MNIST/MNIST-M/USPS) '
                                                                                'seg: G/C (GTA5/Cityscapes)')
     parser.add_argument('--workers', type=int, default=0)

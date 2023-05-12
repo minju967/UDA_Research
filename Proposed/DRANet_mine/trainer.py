@@ -6,13 +6,15 @@ from tensorboardX import SummaryWriter
 import torch.backends.cudnn
 import numpy as np
 import os
+import sys 
 
+from models.mine import Mine
 from models import *
 from utils import *
 from dataset import get_dataset
 
 def set_converts(datasets, task):
-    training_converts, test_converts = None, []
+    training_converts, test_converts = [], []
     center_dset = datasets[0]
     for source in datasets:  # source
         if not center_dset == source:
@@ -24,7 +26,7 @@ def set_converts(datasets, task):
                 test_converts.append(source + '2' + target)
 
     tensorboard_converts = test_converts
-
+    training_converts = None
     return training_converts, test_converts, tensorboard_converts
 
 class Trainer:
@@ -83,31 +85,20 @@ class Trainer:
         # only E, S
         self.step = step
         for key in self.nets.keys():
-            self.nets[key].load_state_dict(torch.load(self.checkpoint + '/%d/net%s.pth' % (step, key)))
+            self.nets[key].load_state_dict(torch.load(self.checkpoint + '/%d/net%s.pth' % (step, key)), strict=False)
+
+        for key in self.nets.keys():
+            self.nets[key].eval()
 
     def set_networks(self):
-        self.nets['E'] = Encoder()
-        self.nets['S'] = Separator(self.imsize, self.training_converts)
-
-        # initialization
-        for net in self.nets.keys():
-            init_params(self.nets[net])
+        with torch.no_grad():
+            self.nets['E'] = Encoder()
+            self.nets['S'] = Separator(self.imsize, self.training_converts)
 
         for net in self.nets.keys():
             self.nets[net].cuda()
-
-    def set_optimizers(self):
-        self.optims['E'] = optim.Adam(self.nets['E'].parameters(), lr=self.args.lr_dra,
-                                      betas=(self.args.beta1, 0.999),
-                                      weight_decay=self.args.weight_decay_dra)
-
-        self.optims['S'] = optim.Adam(self.nets['S'].parameters(), lr=self.args.lr_dra,
-                                      betas=(self.args.beta1, 0.999),
-                                      weight_decay=self.args.weight_decay_dra)
-
-    def set_zero_grad(self):
-        for net in self.nets.keys():
-            self.nets[net].zero_grad()
+        
+        self.MI_net = self.get_MINE()
 
     def set_train(self):
         for net in self.nets.keys():
@@ -122,15 +113,14 @@ class Trainer:
         batch_data = dict()
         for dset in self.args.datasets:
             try:
-                batch_data[dset] = batch_data_iter[dset].next()
+                batch_data[dset] = next(batch_data_iter[dset])
             except StopIteration:
                 batch_data_iter[dset] = iter(self.train_loader[dset])
-                batch_data[dset] = batch_data_iter[dset].next()
+                batch_data[dset] = next(batch_data_iter[dset])
                 
         return batch_data
 
     def train_dis(self, imgs):  
-        self.set_zero_grad()
         features = dict()
 
         # Real
@@ -202,12 +192,39 @@ class Trainer:
                 self.writer.add_image('5_Prediction/%s' % key, x, self.step)
             self.set_train()
 
+    def train_mine(self, content, style):
+        source, target = self.args.datasets
+        
+        mi_ss = self.mine.optimize(content[source], style[source], iters=100, batch_size=self.args.batch)
+        # mi_st = self.mine.optimize(content[source], domain[target])
+        # mi_ts = self.mine.optimize(content[target], domain[source])
+        # mi_tt = self.mine.optimize(content[target], domain[target])
+
+        print(mi_ss)
+
+    def get_MINE(self):
+        T = nn.Sequential(
+            nn.Linear(64 + 64, 100),
+            nn.ReLU(),
+            nn.Linear(100, 100),
+            nn.ReLU(),
+            nn.Linear(100, 1)
+            )
+        
+        mine = Mine(
+            args    = self.args,
+            T       = T.cuda(),
+            loss    = 'mine',        #mine_biased, fdiv
+            method  = 'concat').cuda()
+
+        return mine
+
     def train(self):
         self.set_default()
         self.set_networks()
         self.load_networks(self.args.load_step)
+        # self.set_eval()
 
-        self.logger.info(self.loss_fns.alpha)
         batch_data_iter = dict()
         for dset in self.args.datasets:
             batch_data_iter[dset] = iter(self.train_loader[dset])
@@ -221,8 +238,7 @@ class Trainer:
             for dset in self.args.datasets:
                 imgs[dset], labels[dset] = batch_data[dset]
                 imgs[dset], labels[dset] = imgs[dset].cuda(), labels[dset].cuda()
-                if self.args.task == 'seg':
-                    labels[dset] = labels[dset].long()
+
                 if imgs[dset].size(0) < min_batch:
                     min_batch = imgs[dset].size(0)
             if min_batch < self.args.batch:
@@ -230,25 +246,8 @@ class Trainer:
                     imgs[dset], labels[dset] = imgs[dset][:min_batch], labels[dset][:min_batch]
 
             # training
-            content, style = self.train_dis(imgs)
-            print(content.size())
-            print(style.size())
-
-            '''
-            # # tensorboard
-            # if self.step % self.args.tensor_freq == 0:
-            #     self.tensor_board_log(imgs, labels)
-
-            # # evaluation
-            # if self.step % self.args.eval_freq == 0:
-            #     for cv in self.test_converts:
-            #         self.eval(cv)
-            '''
-
-    def test(self):
-        self.set_default()
-        self.set_networks(train=False)
-        self.load_networks(self.args.load_step)
-        for cv in self.test_converts:
-            self.eval(cv)
+            contents, styles = self.train_dis(imgs)
+            source, target   = self.args.datasets
+            pred_mi          = self.MI_net.optimize_MI(contents[target], styles[target], i, batch_size=self.args.batch)
+            
 
