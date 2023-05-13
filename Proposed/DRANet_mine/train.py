@@ -5,4 +5,13 @@ from trainer import Trainer
 if __name__ == '__main__':
     opt = get_args()
     trainer = Trainer(opt)
-    trainer.train()
+    
+    if opt.task == 'DRAnet':
+        trainer.DRANet()
+    elif opt.task == 'MI_net':
+        trainer.MI()
+    else:
+        trainer.DRANet_MI()
+    
+
+
