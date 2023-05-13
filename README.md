@@ -39,6 +39,8 @@ Unsupervised Domain Adaptation
   
   1. DRANet_MINE 적용
    
+      * DRANet content - style latent MI estimator
+      
       * MI(C<sup>d</sup>,  S<sup>d</sup>) Minimization
   
       * MI(C<sup>d</sup>,  S<sup>d</sup>) Maximization
