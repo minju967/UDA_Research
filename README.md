@@ -39,8 +39,8 @@ Unsupervised Domain Adaptation
   
   1. DRANet_MINE 적용
    
-      * I(C<sub>d, S<sub>d) Minimization
+      * I(C<sup>d^, S<sup>d) Minimization
   
-      * I(C^d, S^d) Maximization
+      * I(C<sup>d^, S<sup>^d) Maximization
    
 
