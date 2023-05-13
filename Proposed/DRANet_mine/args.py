@@ -26,6 +26,7 @@ def get_args():
     parser.add_argument('--iter', type=int, default=30000, help='total training iterations')
     parser.add_argument('--manualSeed', type=int, default=5688)
     parser.add_argument('--ex', help='Experiment name')
+    parser.add_argument('--save', help='Experiment name')
     parser.add_argument('--logfile', type=str)
     parser.add_argument('--tensor_freq', type=int, help='frequency of showing results on tensorboard during training.')
     parser.add_argument('--eval_freq', type=int, help='frequency of evaluation during training.')
@@ -53,7 +54,7 @@ def get_args():
     if args.imsize is None:
         args.imsize = 64
     if args.tensor_freq is None:
-        args.tensor_freq = 1000
+        args.tensor_freq = 100
     if args.eval_freq is None:
-        args.eval_freq = 10000
+        args.eval_freq = 500
     return args

@@ -16,6 +16,8 @@ import pytorch_lightning as pl
 from pytorch_lightning import Trainer
 from utils.helpers import *
 
+# from trainer import SummaryWriter
+
 EPS = 1e-6
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -48,6 +50,7 @@ def ema_loss(x, running_mean, alpha):
         running_mean = t_exp
     else:
         running_mean = ema(t_exp, alpha, running_mean.item())
+
     t_log = EMALoss.apply(x, running_mean)
 
     # Recalculate ema
@@ -70,6 +73,8 @@ class Mine(nn.Module):
                 self.T = CustomSequential(ConcatLayer(), T).to(device=device)
         else:
             self.T = T
+        
+        self.T.cuda()
 
     def forward(self, x, z, z_marg=None):
         if z_marg is None:
@@ -87,8 +92,9 @@ class Mine(nn.Module):
             second_term = torch.logsumexp(
                 t_marg, 0) - math.log(t_marg.shape[0])
 
-        # return -t + second_term
-        return t - second_term
+        
+        # return t - second_term
+        return t, second_term
 
     def mi(self, x, z, z_marg=None):
         if isinstance(x, np.ndarray):
@@ -97,7 +103,9 @@ class Mine(nn.Module):
             z = torch.from_numpy(z).float()
 
         with torch.no_grad():
-            mi = self.forward(x, z, z_marg)
+            term1, term2 = self.forward(x, z, z_marg)
+            mi = term1 - term2
+
         return mi
 
     def optimize(self, X, Y, iters, batch_size, opt=None):
@@ -124,15 +132,29 @@ class Mine(nn.Module):
 
     def optimize_MI(self, X, Y, iter, batch_size):
         opt = torch.optim.Adam(self.parameters(), lr=1e-4)
-        distance, sig_dis, loss = 0, 0, 0
+        distance, sig_dis, loss, term1, term2 = 0, 0, 0, 0, 0
         for i, (x, y) in enumerate(batch(X, Y, batch_size=batch_size)):
+            x = x.to(device)
+            y = y.to(device)
             opt.zero_grad()
-            distance = self.forward(x, y)
+            term1, term2 = self.forward(x, y)
+            distance = term1 - term2
             sig_dis  = torch.sigmoid(distance)
             loss     = -torch.log(sig_dis)
             loss.backward()
             opt.step()
+
+        try:        
+            print(f'[{iter}/{self.args.iter}] || Term1: {term1.item():.3f} || Term2: {term2.item():.3f} || Distance(MI):{distance.item():.3f}|| loss: {loss.item():.3f}')
+            return term1.item(), term2.item(), distance.item(), loss.item()
+        except:
+            return term1, term2, distance, loss
+
         
-        final_mi = self.mi(X, Y)
-        print(f'[{iter}/{self.args.iter}] Distance(MI): {distance:.3f} || loss: {loss:.3f} || Final_MI:{final_mi:.3f}')
-        return final_mi
+    
+    def eval_MI(self, C, S):
+        self.T.eval()
+        MI = self.mi(C, S)
+        self.T.train()
+        return MI
+            

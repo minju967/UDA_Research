@@ -50,7 +50,7 @@ class Trainer:
 
         self.nets, self.optims, self.losses = dict(), dict(), dict()
 
-        self.writer = SummaryWriter('./tensorboard/%s' % args.ex)
+        self.writer = SummaryWriter('./tensorboard/%s' % args.save)
         self.logger = getLogger()
         self.checkpoint = './checkpoint/%s/%s' % (args.task, args.ex)
         self.step = 0
@@ -80,16 +80,18 @@ class Trainer:
 
         for key in self.nets.keys():
             torch.save(self.nets[key].state_dict(), self.checkpoint + '/%d/net%s.pth' % (self.step, key))
+        
+        torch.save(self.MI_net.state_dict(), self.checkpoint + '/%d/MI.pth' % (self.step))
 
     def load_networks(self, step):
         # only E, S
         self.step = step
         for key in self.nets.keys():
             self.nets[key].load_state_dict(torch.load(self.checkpoint + '/%d/net%s.pth' % (step, key)), strict=False)
-
+        
         for key in self.nets.keys():
             self.nets[key].eval()
-
+        
     def set_networks(self):
         with torch.no_grad():
             self.nets['E'] = Encoder()
@@ -108,7 +110,7 @@ class Trainer:
         for convert in self.test_converts:
             self.nets['E'][convert].eval()
             self.nets['S'][convert].eval()
-
+        
     def get_batch(self, batch_data_iter):
         batch_data = dict()
         for dset in self.args.datasets:
@@ -208,14 +210,15 @@ class Trainer:
             nn.ReLU(),
             nn.Linear(100, 100),
             nn.ReLU(),
-            nn.Linear(100, 1)
+            nn.Linear(100, 1),
+            nn.Sigmoid()
             )
         
         mine = Mine(
             args    = self.args,
-            T       = T.cuda(),
-            loss    = 'mine',        #mine_biased, fdiv
-            method  = 'concat').cuda()
+            T       = T,
+            loss    = 'mine_biased',        #mine_biased, fdiv
+            method  = 'concat')
 
         return mine
 
@@ -223,7 +226,6 @@ class Trainer:
         self.set_default()
         self.set_networks()
         self.load_networks(self.args.load_step)
-        # self.set_eval()
 
         batch_data_iter = dict()
         for dset in self.args.datasets:
@@ -246,8 +248,51 @@ class Trainer:
                     imgs[dset], labels[dset] = imgs[dset][:min_batch], labels[dset][:min_batch]
 
             # training
-            contents, styles = self.train_dis(imgs)
-            source, target   = self.args.datasets
-            pred_mi          = self.MI_net.optimize_MI(contents[target], styles[target], i, batch_size=self.args.batch)
-            
+            contents, styles      = self.train_dis(imgs)
+            source, target        = self.args.datasets
+            t1, t2, pred_mi, loss = self.MI_net.optimize_MI(contents[target], styles[target], i, batch_size=self.args.batch)
 
+            if i % self.args.tensor_freq == 0:
+                self.writer.add_scalar('Train/MI', pred_mi, i)
+                self.writer.add_scalar('Train/Loss', loss, i)
+            
+            if i % self.args.eval_freq == 0:
+                for cv in self.test_converts:
+                    self.eval(cv, i)
+
+
+    def eval(self, cv, step):
+        source, target = cv.split('2')
+
+        max_mi = 0
+        print('=========== TEST ===========')
+
+        with torch.no_grad():
+            self.MI_net.eval()
+            mi = 0
+            for batch_idx, (imgs, _) in enumerate(self.test_loader[target]):
+                imgs = imgs.cuda()
+                features = dict()
+                features[target] = self.nets['E'](imgs)
+                contents, styles = self.nets['S'](features, self.training_converts)
+                mi += self.MI_net.eval_MI(contents[target], styles[target])
+            
+            MI = mi / (batch_idx+1)
+            self.logger.info('Step: %d | MI: %.3f%%' %(self.step, MI))
+            print('\nStep: %d | MI: %.3f\n' %(batch_idx, MI))
+            self.writer.add_scalar(f'Test/MI[{cv}]', round(MI.item(), 3), step)
+            
+            if MI > max_mi:
+                self.save_networks()
+                max_mi = MI
+        
+        self.MI_net.train()
+
+    def test(self):
+        self.set_default()
+        self.set_networks()
+        self.load_networks(self.args.load_step)
+        
+        step = self.args.MI_step
+        self.MI_net.load_state_dict(torch.load(self.checkpoint + '/%d/MI.pth' % (step)))
+        self.MI_net.eval()

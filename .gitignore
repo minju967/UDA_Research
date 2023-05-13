@@ -3,6 +3,9 @@
 *.txt
 *.png
 Dataset
+tensorboard
+checkpoint
+*.log
 <<<<<<< HEAD
 *.pyc
 =======
