@@ -41,6 +41,6 @@ Unsupervised Domain Adaptation
    
       * I(C<sup>d</sup>,  S<sup>d</sup>) Minimization
   
-      * I(C<sup>d</sup>,  S<sup>^d</sup>) Maximization
+      * I(C<sup>d</sup>,  S<sup>d</sup>) Maximization
    
 
