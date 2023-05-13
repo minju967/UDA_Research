@@ -38,9 +38,7 @@ Unsupervised Domain Adaptation
   실험내용 및 결과 정리
   
   1. DRANet_MINE 적용
- 
     * I(C^d, S^d) Minimization
-  
     * I(C^d, S^d) Maximization
    
 
