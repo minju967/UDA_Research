@@ -9,12 +9,21 @@ from torch.autograd import Variable
 from torchvision import datasets
 from torchvision.transforms import transforms
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> fc9af6d7a78531b2f9f5e2b70400e4680faf329d
 from models.layers import ConcatLayer, CustomSequential
 
 import pytorch_lightning as pl
 from pytorch_lightning import Trainer
 from utils.helpers import *
 
+<<<<<<< HEAD
+=======
+# from trainer import SummaryWriter
+
+>>>>>>> fc9af6d7a78531b2f9f5e2b70400e4680faf329d
 EPS = 1e-6
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -89,6 +98,11 @@ class Mine(nn.Module):
             second_term = torch.logsumexp(
                 t_marg, 0) - math.log(t_marg.shape[0])
 
+<<<<<<< HEAD
+=======
+        
+        # return t - second_term
+>>>>>>> fc9af6d7a78531b2f9f5e2b70400e4680faf329d
         return t, second_term
 
     def mi(self, x, z, z_marg=None):
@@ -103,10 +117,39 @@ class Mine(nn.Module):
 
         return mi
 
+<<<<<<< HEAD
     def optimize_MI(self, X, Y):
         opt = torch.optim.Adam(self.parameters(), lr=1e-4)
         distance, sig_dis, loss, term1, term2 = 0, 0, 0, 0, 0
         for i, (x, y) in enumerate(batch(X, Y, batch_size=X.size(0))):
+=======
+    def optimize(self, X, Y, iters, batch_size, opt=None):
+        
+        # opt = torch.optim.Adam(self.parameters(), lr=1e-4)
+
+        for iter in range(1, iters + 1):
+            mu_mi = 0
+            for i, (x, y) in enumerate(batch(X, Y, batch_size)):
+                # opt.zero_grad()
+                loss = self.forward(x, y)
+                print(f'{iter}_{i}_loss: {loss:.3f}')
+                # loss.backward()
+                # opt.step()
+
+                # mu_mi -= loss.item()
+            if iter % (iters // 3) == 0:
+                pass
+                # print(f"It {iter} - MI: {mu_mi / batch_size}")
+
+        final_mi = self.mi(X, Y)
+        print(f"Final MI: {final_mi}")
+        return final_mi
+
+    def optimize_MI(self, X, Y, iter, batch_size):
+        opt = torch.optim.Adam(self.parameters(), lr=1e-4)
+        distance, sig_dis, loss, term1, term2 = 0, 0, 0, 0, 0
+        for i, (x, y) in enumerate(batch(X, Y, batch_size=batch_size)):
+>>>>>>> fc9af6d7a78531b2f9f5e2b70400e4680faf329d
             x = x.to(device)
             y = y.to(device)
             opt.zero_grad()
@@ -122,9 +165,18 @@ class Mine(nn.Module):
             return term1.item(), term2.item(), distance.item(), loss.item()
         except:
             return term1, term2, distance, loss
+<<<<<<< HEAD
+=======
+
+        
+>>>>>>> fc9af6d7a78531b2f9f5e2b70400e4680faf329d
     
     def eval_MI(self, C, S):
         self.T.eval()
         MI = self.mi(C, S)
         self.T.train()
         return MI
+<<<<<<< HEAD
+=======
+            
+>>>>>>> fc9af6d7a78531b2f9f5e2b70400e4680faf329d

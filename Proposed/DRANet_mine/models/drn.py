@@ -6,7 +6,7 @@ import math
 import torch.utils.model_zoo as model_zoo
 import torchvision
 
-from .utils import register_model, safe_load_state_dict
+from utils import register_model, safe_load_state_dict
 
 __all__ = ['DRN', 'drn26', 'drn42', 'drn58']
 

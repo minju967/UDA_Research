@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+
+>>>>>>> fc9af6d7a78531b2f9f5e2b70400e4680faf329d
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
@@ -170,4 +174,8 @@ class ConvolutionalStatisticsNetwork(nn.Module):
         x = self.xz_block(x, z, self.conv3, self.z_linear3)
 
         x = x.view(x.size(0), -1)
+<<<<<<< HEAD
         return self.fc1(x)
+=======
+        return self.fc1(x)
+>>>>>>> fc9af6d7a78531b2f9f5e2b70400e4680faf329d

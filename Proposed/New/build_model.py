@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import functools
 from batchinstancenorm import BatchInstanceNorm2d as Normlayer
-
+from torch.nn import functional as F
 
 ## DRANet Encoder
 class ResidualBlock(nn.Module):
@@ -84,3 +84,33 @@ class Vector_convert(nn.Module):
             domain[dset]  = domain_vec
 
         return content, domain
+
+import torchvision.models as models
+from torchvision.models import EfficientNet_B0_Weights
+
+class EfficientNet(nn.Module):
+    def __init__(self, fine_tune=True):
+        super(EfficientNet, self).__init__()
+
+        model = models.efficientnet_b0(weights=EfficientNet_B0_Weights.IMAGENET1K_V1)
+        self.model = torch.nn.Sequential(*(list(model.children())[:-1])).cuda()
+
+        if fine_tune:
+            print('[INFO]: Fine-tuning all layers...')
+            for params in self.model.parameters():
+                params.requires_grad = True
+        elif not fine_tune:
+            print('[INFO]: Freezing hidden layers...')
+            for params in self.model.parameters():
+                params.requires_grad = False
+
+        self.cls_classifier = nn.Linear(in_features=1280, out_features=65)
+        self.dom_classifier = nn.Linear(in_features=1280, out_features=2)
+
+    def forward(self, x1, x2):
+        y1 = self.model(x1).view(x1.size()[0], -1)
+        y2 = self.model(x2).view(x2.size()[0], -1)
+        cls_out = self.cls_classifier(y1)
+        dom_out = self.dom_classifier(y2)
+
+        return cls_out, dom_out

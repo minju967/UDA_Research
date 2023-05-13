@@ -62,28 +62,26 @@ class Separator(nn.Module):
             nn.ReLU(True),
             spectral_norm(nn.Conv2d(ch, ch, kernel_size=3, stride=1, padding=1, bias=True)),
             nn.ReLU(True),
+            # nn.AvgPool2d(32)
         )
+        self.pool = nn.AvgPool2d(32)
         self.w = nn.ParameterDict()
         w, h = imsize
-        for cv in converts:
-            self.w[cv] = nn.Parameter(torch.ones(1, ch, h//down_scale, w//down_scale), requires_grad=True)
 
-    def forward(self, features, converts=None):
+    def forward(self, f_dict, converts=None):
         contents, styles = dict(), dict()
-        for key in features.keys():
-            styles[key] = self.conv(features[key])  # equals to F - wS(F) see eq.(2)
-            contents[key] = features[key] - styles[key]  # equals to wS(F)
-            if '2' in key:  # for 3 datasets: source-mid-target
-                source, target = key.split('2')
-                contents[target] = contents[key]
 
-        if converts is not None:  # separate features of converted images to compute consistency loss.
-            for cv in converts:
-                source, target = cv.split('2')
-                contents[cv] = self.w[cv] * contents[source]
-                
+        for dset in f_dict.keys():
+            contents_f = self.conv(f_dict[dset])  # equals to F - wS(F) see eq.(2)
+            styles_f = f_dict[dset] - contents_f  # equals to wS(F)
+
+            contents_f   = self.pool(contents_f)
+            styles_f = self.pool(styles_f) 
+
+            styles[dset]     = styles_f.view(contents_f.size(0), -1)
+            contents[dset]   = contents_f.view(contents_f.size(0), -1)
+
         return contents, styles
-
 
 class Generator(nn.Module):
     def __init__(self, channels=512):

@@ -17,14 +17,14 @@ def get_dataset_NB(dataset, batch, imsize, workers):
         test_dataset = Cityscapes(list_path='./data_list/Cityscapes', split='val', crop_size=imsize, train=False)
 
     elif dataset == 'M':
-        train_dataset = dset.MNIST(root='./data', train=True, download=True,
+        train_dataset = dset.MNIST(root='D:\\UDA_research\\Dataset', train=True, download=True,
                                    transform=transforms.Compose([
                                        transforms.Resize(imsize),
                                        transforms.Grayscale(3),
                                        transforms.ToTensor(),
                                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                    ]))
-        test_dataset = dset.MNIST(root='./data', train=False, download=True,
+        test_dataset = dset.MNIST(root='D:\\UDA_research\\Dataset', train=False, download=True,
                                   transform=transforms.Compose([
                                       transforms.Resize(imsize),
                                       transforms.Grayscale(3),
@@ -32,14 +32,14 @@ def get_dataset_NB(dataset, batch, imsize, workers):
                                       transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                   ]))
     elif dataset == 'U':
-        train_dataset = dset.USPS(root='./data/usps', train=True, download=True,
+        train_dataset = dset.USPS(root='D:\\UDA_research\\Dataset\\usps', train=True, download=True,
                                    transform=transforms.Compose([
                                        transforms.Resize(imsize),
                                        transforms.Grayscale(3),
                                        transforms.ToTensor(),
                                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                    ]))
-        test_dataset = dset.USPS(root='./data/usps', train=False, download=True,
+        test_dataset = dset.USPS(root='D:\\UDA_research\\Dataset\\usps', train=False, download=True,
                                   transform=transforms.Compose([
                                       transforms.Resize(imsize),
                                       transforms.Grayscale(3),
@@ -47,13 +47,13 @@ def get_dataset_NB(dataset, batch, imsize, workers):
                                       transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                   ]))
     elif dataset == 'MM':
-        train_dataset = MNIST_M(root='./data/mnist_m', train=True,
+        train_dataset = MNIST_M(root='D:\\UDA_research\\Dataset\\mnist_m', train=True,
                                 transform=transforms.Compose([
                                     transforms.Resize(imsize),
                                     transforms.ToTensor(),
                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                                 ]))
-        test_dataset = MNIST_M(root='./data/mnist_m', train=False,
+        test_dataset = MNIST_M(root='D:\\UDA_research\\Dataset\\mnist_m', train=False,
                                transform=transforms.Compose([
                                    transforms.Resize(imsize),
                                    transforms.ToTensor(),

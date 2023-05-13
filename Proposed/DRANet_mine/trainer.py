@@ -6,7 +6,9 @@ from tensorboardX import SummaryWriter
 import torch.backends.cudnn
 import numpy as np
 import os
+import sys 
 
+from models.mine import Mine
 from models import *
 from utils import *
 from loss_functions import *
@@ -32,9 +34,15 @@ def set_converts(datasets, task):
         for target in datasets:  # target
             if not source == target:
                 test_converts.append(source + '2' + target)
+<<<<<<< HEAD
     
         tensorboard_converts = test_converts
 
+=======
+
+    tensorboard_converts = test_converts
+    training_converts = None
+>>>>>>> fc9af6d7a78531b2f9f5e2b70400e4680faf329d
     return training_converts, test_converts, tensorboard_converts
 
 class Trainer:
@@ -66,7 +74,7 @@ class Trainer:
         self.nets, self.optims, self.losses = dict(), dict(), dict()
         self.loss_fns = Loss_Functions(args)
 
-        self.writer = SummaryWriter('./tensorboard/%s' % args.ex)
+        self.writer = SummaryWriter('./tensorboard/%s' % args.save)
         self.logger = getLogger()
         self.checkpoint = './checkpoint/%s/%s' % (args.task, args.ex)
         self.step = 0
@@ -96,10 +104,13 @@ class Trainer:
 
         for key in self.nets.keys():
             torch.save(self.nets[key].state_dict(), self.checkpoint + '/%d/net%s.pth' % (self.step, key))
+        
+        torch.save(self.MI_net.state_dict(), self.checkpoint + '/%d/MI.pth' % (self.step))
 
     def load_networks(self, step):
         self.step = step
         for key in self.nets.keys():
+<<<<<<< HEAD
             if self.args.task != 'MI_net':
                 self.nets[key].load_state_dict(torch.load(self.checkpoint + '/%d/net%s.pth' % (step, key)))
             else:
@@ -218,6 +229,22 @@ class Trainer:
                     self.nets[net][convert].zero_grad()
             else:
                 self.nets[net].zero_grad()
+=======
+            self.nets[key].load_state_dict(torch.load(self.checkpoint + '/%d/net%s.pth' % (step, key)), strict=False)
+        
+        for key in self.nets.keys():
+            self.nets[key].eval()
+        
+    def set_networks(self):
+        with torch.no_grad():
+            self.nets['E'] = Encoder()
+            self.nets['S'] = Separator(self.imsize, self.training_converts)
+
+        for net in self.nets.keys():
+            self.nets[net].cuda()
+        
+        self.MI_net = self.get_MINE()
+>>>>>>> fc9af6d7a78531b2f9f5e2b70400e4680faf329d
 
     def set_train(self):
         for net in self.nets.keys():
@@ -232,21 +259,36 @@ class Trainer:
 
     def set_eval(self):
         for convert in self.test_converts:
+<<<<<<< HEAD
             self.nets['T'][convert].eval()
 
+=======
+            self.nets['E'][convert].eval()
+            self.nets['S'][convert].eval()
+        
+>>>>>>> fc9af6d7a78531b2f9f5e2b70400e4680faf329d
     def get_batch(self, batch_data_iter):
         batch_data = dict()
         for dset in self.args.datasets:
             try:
-                batch_data[dset] = batch_data_iter[dset].next()
+                batch_data[dset] = next(batch_data_iter[dset])
             except StopIteration:
                 batch_data_iter[dset] = iter(self.train_loader[dset])
+<<<<<<< HEAD
                 batch_data[dset] = batch_data_iter[dset].next()
         return batch_data
 
     def train_dis(self, imgs):  
         self.set_zero_grad()
         features, converted_imgs, D_outputs_fake, D_outputs_real = dict(), dict(), dict(), dict()
+=======
+                batch_data[dset] = next(batch_data_iter[dset])
+                
+        return batch_data
+
+    def train_dis(self, imgs):  
+        features = dict()
+>>>>>>> fc9af6d7a78531b2f9f5e2b70400e4680faf329d
 
         # Real
         for dset in self.args.datasets:
@@ -386,6 +428,7 @@ class Trainer:
         for loss in self.losses.keys():
             self.writer.add_scalar('Losses/%s' % loss, self.losses[loss], self.step)
 
+<<<<<<< HEAD
     def eval(self, cv):
         source, target = cv.split('2')
         self.set_eval()
@@ -433,6 +476,61 @@ class Trainer:
         self.set_optimizers()
         self.set_train()
         self.logger.info(self.loss_fns.alpha)
+=======
+        # Segmentation GT, Prediction
+        if self.args.task == 'seg':
+            vn = 2
+            self.set_eval()
+            preds = dict()
+            for dset in self.args.datasets:
+                x = decode_labels(labels[dset].detach(), num_images=vn)
+                x = vutils.make_grid(x, normalize=True, scale_each=True, nrow=nrow)
+                self.writer.add_image('4_GT/%s' % dset, x, self.step)
+                preds[dset] = self.nets['T']['G2C'](imgs[dset])
+            preds['G2C'] = self.nets['T']['G2C'](converted_imgs['G2C'])
+
+            for key in preds.keys():
+                pred = preds[key].data.cpu().numpy()
+                pred = np.argmax(pred, axis=1)
+                x = decode_labels(pred, num_images=vn)
+                x = vutils.make_grid(x, normalize=True, scale_each=True, nrow=nrow)
+                self.writer.add_image('5_Prediction/%s' % key, x, self.step)
+            self.set_train()
+
+    def train_mine(self, content, style):
+        source, target = self.args.datasets
+        
+        mi_ss = self.mine.optimize(content[source], style[source], iters=100, batch_size=self.args.batch)
+        # mi_st = self.mine.optimize(content[source], domain[target])
+        # mi_ts = self.mine.optimize(content[target], domain[source])
+        # mi_tt = self.mine.optimize(content[target], domain[target])
+
+        print(mi_ss)
+
+    def get_MINE(self):
+        T = nn.Sequential(
+            nn.Linear(64 + 64, 100),
+            nn.ReLU(),
+            nn.Linear(100, 100),
+            nn.ReLU(),
+            nn.Linear(100, 1),
+            nn.Sigmoid()
+            )
+        
+        mine = Mine(
+            args    = self.args,
+            T       = T,
+            loss    = 'mine_biased',        #mine_biased, fdiv
+            method  = 'concat')
+
+        return mine
+
+    def train(self):
+        self.set_default()
+        self.set_networks()
+        self.load_networks(self.args.load_step)
+
+>>>>>>> fc9af6d7a78531b2f9f5e2b70400e4680faf329d
         batch_data_iter = dict()
         for dset in self.args.datasets:
             batch_data_iter[dset] = iter(self.train_loader[dset])
@@ -446,6 +544,10 @@ class Trainer:
             for dset in self.args.datasets:
                 imgs[dset], labels[dset] = batch_data[dset]
                 imgs[dset], labels[dset] = imgs[dset].cuda(), labels[dset].cuda()
+<<<<<<< HEAD
+=======
+
+>>>>>>> fc9af6d7a78531b2f9f5e2b70400e4680faf329d
                 if imgs[dset].size(0) < min_batch:
                     min_batch = imgs[dset].size(0)
             if min_batch < self.args.batch:
@@ -453,6 +555,7 @@ class Trainer:
                     imgs[dset], labels[dset] = imgs[dset][:min_batch], labels[dset][:min_batch]
 
             # training
+<<<<<<< HEAD
             self.train_dis(imgs)
             for t in range(2):
                 self.train_esg(imgs)
@@ -550,3 +653,53 @@ class Trainer:
         self.set_train()
 
         # 기존의 DRANet에 MI Loss term 추가
+=======
+            contents, styles      = self.train_dis(imgs)
+            source, target        = self.args.datasets
+            t1, t2, pred_mi, loss = self.MI_net.optimize_MI(contents[target], styles[target], i, batch_size=self.args.batch)
+
+            if i % self.args.tensor_freq == 0:
+                self.writer.add_scalar('Train/MI', pred_mi, i)
+                self.writer.add_scalar('Train/Loss', loss, i)
+            
+            if i % self.args.eval_freq == 0:
+                for cv in self.test_converts:
+                    self.eval(cv, i)
+
+
+    def eval(self, cv, step):
+        source, target = cv.split('2')
+
+        max_mi = 0
+        print('=========== TEST ===========')
+
+        with torch.no_grad():
+            self.MI_net.eval()
+            mi = 0
+            for batch_idx, (imgs, _) in enumerate(self.test_loader[target]):
+                imgs = imgs.cuda()
+                features = dict()
+                features[target] = self.nets['E'](imgs)
+                contents, styles = self.nets['S'](features, self.training_converts)
+                mi += self.MI_net.eval_MI(contents[target], styles[target])
+            
+            MI = mi / (batch_idx+1)
+            self.logger.info('Step: %d | MI: %.3f%%' %(self.step, MI))
+            print('\nStep: %d | MI: %.3f\n' %(batch_idx, MI))
+            self.writer.add_scalar(f'Test/MI[{cv}]', round(MI.item(), 3), step)
+            
+            if MI > max_mi:
+                self.save_networks()
+                max_mi = MI
+        
+        self.MI_net.train()
+
+    def test(self):
+        self.set_default()
+        self.set_networks()
+        self.load_networks(self.args.load_step)
+        
+        step = self.args.MI_step
+        self.MI_net.load_state_dict(torch.load(self.checkpoint + '/%d/MI.pth' % (step)))
+        self.MI_net.eval()
+>>>>>>> fc9af6d7a78531b2f9f5e2b70400e4680faf329d

@@ -21,16 +21,23 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     ## Common Parameters ##
+<<<<<<< HEAD
     parser.add_argument('-T', '--task', required=True, choices=['DRAnet', 'MI_net', 'DRA-MI'], help='Select Task')
     parser.add_argument('-DT', '--d_type', default='OH', help='NB/OfficeHome')
     parser.add_argument('-D','--datasets', type=str, nargs='+', required=True, help='clf: M/MM/U (MNIST/MNIST-M/USPS)'
                                                                                     'clf: A/CA/P/RW (OfficeHome)')
+=======
+    parser.add_argument('-T', '--task', required=True, help='clf | seg')  # Classification or Segmentation
+    parser.add_argument('-D','--datasets', type=str, nargs='+', required=True, help='clf: M/MM/U (MNIST/MNIST-M/USPS) '
+                                                                               'seg: G/C (GTA5/Cityscapes)')
+>>>>>>> fc9af6d7a78531b2f9f5e2b70400e4680faf329d
     parser.add_argument('--workers', type=int, default=0)
     parser.add_argument('--batch', type=int)
     parser.add_argument('--imsize', type=int, help='the height of the input image')
     parser.add_argument('--iter', type=int, help='total training iterations')
     parser.add_argument('--manualSeed', type=int, default=5688)
     parser.add_argument('--ex', help='Experiment name')
+    parser.add_argument('--save', help='Experiment name')
     parser.add_argument('--logfile', type=str)
     parser.add_argument('--tensor_freq', type=int, help='frequency of showing results on tensorboard during training.')
     parser.add_argument('--eval_freq', type=int, help='frequency of evaluation during training.')
@@ -72,7 +79,7 @@ def get_args():
         else:
             args.iter = 100000
     if args.tensor_freq is None:
-        args.tensor_freq = 1000
+        args.tensor_freq = 100
     if args.eval_freq is None:
-        args.eval_freq = 10000
+        args.eval_freq = 500
     return args
