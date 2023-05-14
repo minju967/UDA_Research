@@ -33,8 +33,8 @@ class OfficeHome(torch.utils.data.Dataset):
         return len(self.all_data)
     
     def __getitem__(self, index):
-        path = self.all_data(index)
+        path = self.all_data[index]
         image = self.transform(Image.open(path).convert('RGB'))
-        label = self.cls_list.index(image.split('\\')[-2])
+        label = self.cls_list.index(path.split('\\')[-2])
 
         return image, label

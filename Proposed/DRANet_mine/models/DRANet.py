@@ -9,7 +9,7 @@ from .batchinstancenorm import BatchInstanceNorm2d as Normlayer
 import functools
 from functools import partial
 import torchvision.transforms as ttransforms
-from torchvision.models import resnet50, ResNet50_Weights
+from torchvision.models import resnet50, ResNet50_Weights, vgg19, VGG19_Weights
 
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels, filters=64, kernel_size=3, stride=1, padding=1):
@@ -60,12 +60,37 @@ class Separator(nn.Module):
             nn.ReLU(True),
             spectral_norm(nn.Conv2d(ch, ch, kernel_size=3, stride=1, padding=1, bias=True)),
             nn.ReLU(True),
+        )
+        self.w = nn.ParameterDict()
+        w, h = imsize
+        for cv in converts:
+            self.w[cv] = nn.Parameter(torch.ones(1, ch, h//down_scale, w//down_scale), requires_grad=True)
+
+    def forward(self, features, converts=None):
+        contents, styles = dict(), dict()
+        for key in features.keys():
+            styles[key] = self.conv(features[key])  # equals to F - wS(F) see eq.(2)
+            contents[key] = features[key] - styles[key]  # equals to wS(F)
+
+        if converts is not None:  # separate features of converted images to compute consistency loss.
+            for cv in converts:
+                source, target = cv.split('2')
+                contents[cv] = self.w[cv] * contents[source]
+
+        return contents, styles
+    
+class Separator_MI(nn.Module):
+    def __init__(self, imsize, converts, ch=64, down_scale=2):
+        super(Separator, self).__init__()
+        self.conv = nn.Sequential(
+            spectral_norm(nn.Conv2d(ch, ch, kernel_size=3, stride=1, padding=1, bias=True)),
+            nn.ReLU(True),
+            spectral_norm(nn.Conv2d(ch, ch, kernel_size=3, stride=1, padding=1, bias=True)),
+            nn.ReLU(True),
             # nn.AvgPool2d(32)
         )
         self.pool = nn.AvgPool2d(32)
-        self.w = nn.ParameterDict()
-        w, h = imsize
-
+        
     def forward(self, f_dict, converts=None):
         contents, styles = dict(), dict()
 
@@ -79,7 +104,7 @@ class Separator(nn.Module):
             styles[dset]     = styles_f.view(contents_f.size(0), -1)
             contents[dset]   = contents_f.view(contents_f.size(0), -1)
 
-        return contents, styles
+        return contents, styles    
 
 class Generator(nn.Module):
     def __init__(self, channels=512):
@@ -128,7 +153,7 @@ class Classifier_OfficeHome(nn.Module):
         self.model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)        
         in_dim = self.model.fc.in_features   # 2048
 
-        self.fc = nn.Sequential(
+        self.model.fc = nn.Sequential(
             nn.Linear(in_dim, 1024),
             nn.ReLU(),
             nn.Linear(1024, 512),
@@ -137,15 +162,14 @@ class Classifier_OfficeHome(nn.Module):
             nn.Linear(256, num_cls))
 
     def forward(self, input):
-        feature = self.model(input)
-        output  = self.fc(feature)
+        output = self.model(input)
 
         return output
     
 class VGG19(nn.Module):
     def __init__(self):
         super(VGG19, self).__init__()
-        features = models.vgg19(pretrained=True).features
+        features = vgg19(weights=VGG19_Weights.IMAGENET1K_V1).features
         self.to_relu_1_1 = nn.Sequential()
         self.to_relu_2_1 = nn.Sequential()
         self.to_relu_3_1 = nn.Sequential()
@@ -241,15 +265,16 @@ class Discriminator_OfficeHome(nn.Module):
         self.model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)        
         in_dim = self.model.fc.in_features   # 2048
 
-        self.fc = nn.Sequential(
+        self.model.fc = nn.Sequential(
             nn.Linear(in_dim, 1024),
             nn.ReLU(),
             nn.Linear(1024, 512),
             nn.ReLU(),
             nn.Linear(512, 256),
-            nn.Linear(256, 1))
+            nn.Linear(256, 1),
+            nn.Sigmoid())
 
     def forward(self, input):
-        feature = self.model(input)
-        output  = self.fc(feature)
+        output = self.model(input)
+
         return output

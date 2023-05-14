@@ -16,6 +16,8 @@ from models import *
 from loss_functions import *
 from dataset import get_dataset_NB, get_dataset_OH
 
+os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 # converts:M2MM --> MM2M
 # 모든 Network는 각각
@@ -25,7 +27,7 @@ from dataset import get_dataset_NB, get_dataset_OH
         test_converts = ['M2MM', 'MM2M']
         tensorboard_converts = ['M2MM', 'MM2M']
 '''
-def set_converts(datasets, task):
+def set_converts(datasets):
     training_converts, test_converts = [], []
     center_dset = datasets[0]
     for source in datasets:  # source
@@ -44,8 +46,8 @@ def set_converts(datasets, task):
 class Trainer:
     def __init__(self, args):
         self.args = args
-        self.training_converts, self.test_converts, self.tensorboard_converts = set_converts(args.datasets, args.task)
-    
+        self.training_converts, self.test_converts, self.tensorboard_converts = set_converts(args.datasets)
+        print(self.training_converts)
         self.imsize = (args.imsize, args.imsize)
         self.acc = dict()
         self.best_acc = dict()
@@ -169,7 +171,7 @@ class Trainer:
         
         elif self.args.task == 'MI_net':
             self.nets['E'] = Encoder()
-            self.nets['S'] = Separator(self.imsize, self.training_converts)
+            self.nets['S'] = Separator_MI(self.imsize, self.training_converts)
             self.nets['MI'] = self.get_MINE()
 
             for net in self.nets.keys():
@@ -263,13 +265,12 @@ class Trainer:
 
         # Real
         for dset in self.args.datasets:
-            features[dset] = self.nets['E'](imgs[dset])
-            if self.args.task == 'clf':
-                D_outputs_real[dset] = self.nets['D'][dset](imgs[dset])
-            else:
-                D_outputs_real[dset] = self.nets['D'][dset](slice_patches(imgs[dset]))
+            input = imgs[dset].to(device)
+            features[dset] = self.nets['E'](input)
+            D_outputs_real[dset] = self.nets['D'][dset](input)
 
         contents, styles = self.nets['S'](features, self.training_converts)
+        
         if self.args.task == 'MI_net':
             return contents, styles
                 
@@ -283,10 +284,9 @@ class Trainer:
         for convert in self.training_converts:
             source, target = convert.split('2')
             converted_imgs[convert] = self.nets['G'](contents[convert], styles[target])
-            if self.args.task == 'clf':
-                D_outputs_fake[convert] = self.nets['D'][target](converted_imgs[convert])
-            else:
-                D_outputs_fake[convert] = self.nets['D'][target](slice_patches(converted_imgs[convert]))
+
+            D_outputs_fake[convert] = self.nets['D'][target](converted_imgs[convert])
+
                 
         errD = self.loss_fns.dis(D_outputs_real, D_outputs_fake)
         errD.backward()
@@ -299,7 +299,7 @@ class Trainer:
         features = dict()
         converted_imgs = dict()
         pred = dict()
-        converts = self.training_converts if self.args.task == 'clf' else self.test_converts
+        converts = self.training_converts
         with torch.no_grad():
             for dset in self.args.datasets:
                 features[dset] = self.nets['E'](imgs[dset])
@@ -369,7 +369,7 @@ class Trainer:
         self.losses['Style'] = Style_loss.data.item()
 
     def tensor_board_log(self, imgs, labels):
-        nrow = 8 if self.args.task == 'clf' else 2
+        nrow = 8 
         features, converted_imgs, recon_imgs = dict(), dict(), dict()
         converts = self.tensorboard_converts
         with torch.no_grad():

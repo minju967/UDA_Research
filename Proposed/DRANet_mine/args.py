@@ -32,7 +32,6 @@ def get_args():
     parser.add_argument('--iter', type=int, help='total training iterations')
     parser.add_argument('--manualSeed', type=int, default=5688)
     parser.add_argument('--ex', help='Experiment name')
-    parser.add_argument('--save', help='Experiment name')
     parser.add_argument('--logfile', type=str)
     parser.add_argument('--tensor_freq', type=int, help='frequency of showing results on tensorboard during training.')
     parser.add_argument('--eval_freq', type=int, help='frequency of evaluation during training.')
@@ -58,13 +57,14 @@ def get_args():
     
     if args.manualSeed is None:
         args.manualSeed = random.randint(1, 10000)
-    if args.batch is None:
-        args.batch = 2
+        
     if args.d_type == 'NB':
         args.imsize = 64
-        args.iter = 10000000
+        args.batch  = 32
+        args.iter   = 10000000
     else:
         args.imsize = 224
+        args.batch  = 128
         args.iter = 100000000
     if args.task == 'DRAnet' or args.task == 'DRA-mi':
         pass
