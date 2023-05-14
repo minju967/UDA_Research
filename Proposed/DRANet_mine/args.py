@@ -11,6 +11,7 @@ def check_dirs(dirs):
     dirs = [dirs] if type(dirs) not in [list, tuple] else dirs
     for d in dirs:
         try:
+            print(d)
             os.makedirs(d)
         except OSError:
             pass
@@ -21,16 +22,10 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     ## Common Parameters ##
-<<<<<<< HEAD
     parser.add_argument('-T', '--task', required=True, choices=['DRAnet', 'MI_net', 'DRA-MI'], help='Select Task')
     parser.add_argument('-DT', '--d_type', default='OH', help='NB/OfficeHome')
     parser.add_argument('-D','--datasets', type=str, nargs='+', required=True, help='clf: M/MM/U (MNIST/MNIST-M/USPS)'
                                                                                     'clf: A/CA/P/RW (OfficeHome)')
-=======
-    parser.add_argument('-T', '--task', required=True, help='clf | seg')  # Classification or Segmentation
-    parser.add_argument('-D','--datasets', type=str, nargs='+', required=True, help='clf: M/MM/U (MNIST/MNIST-M/USPS) '
-                                                                               'seg: G/C (GTA5/Cityscapes)')
->>>>>>> fc9af6d7a78531b2f9f5e2b70400e4680faf329d
     parser.add_argument('--workers', type=int, default=0)
     parser.add_argument('--batch', type=int)
     parser.add_argument('--imsize', type=int, help='the height of the input image')
@@ -64,8 +59,8 @@ def get_args():
     if args.manualSeed is None:
         args.manualSeed = random.randint(1, 10000)
     if args.batch is None:
-        args.batch = 32
-    if args.DT == 'NB':
+        args.batch = 2
+    if args.d_type == 'NB':
         args.imsize = 64
         args.iter = 10000000
     else:
@@ -74,7 +69,7 @@ def get_args():
     if args.task == 'DRAnet' or args.task == 'DRA-mi':
         pass
     else:
-        if args.DT == 'NB':
+        if args.d_type == 'NB':
             args.iter = 10000
         else:
             args.iter = 100000

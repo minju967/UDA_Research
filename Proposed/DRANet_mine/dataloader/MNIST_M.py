@@ -33,7 +33,6 @@ class MNIST_M(torch.utils.data.Dataset):
         image = self.transform(Image.open(image).convert('RGB'))
         return image, label
 
-<<<<<<< HEAD
 
 if __name__ == '__main__':
 	root_dir = 'data/mnist_m'
@@ -49,47 +48,17 @@ if __name__ == '__main__':
 	test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
 
 	def imshow(img):
-	    npimg = img.numpy()
-	    plt.imshow(np.transpose(npimg, (1, 2, 0)))
-	    # plt.show()
+		npimg = img.numpy()
+		plt.imshow(np.transpose(npimg, (1, 2, 0)))
+		plt.show()
 
 	train_dataiter = iter(train_loader)
 	train_images, train_labels = train_dataiter.next()
 	print("Train images", train_images)
 	print("Train images", train_labels)
-	imshow(torchvision.utils.make_grid(train_images))
+	# imshow(torchvision.utils.make_grid(train_images))
 
 	test_dataiter = iter(test_loader)
 	test_images, test_labels = test_dataiter.next()
 	print("Test images", test_labels)
-	imshow(torchvision.utils.make_grid(test_images))
-=======
-if __name__ == '__main__':
-		root_dir = 'data/mnist_m'
-		batch_size = 10
-		composed_transform = transforms.Compose([transforms.Scale((224,224)),transforms.ToTensor()])
-		train_dataset = MNIST_M(root=root_dir, train=True, transform=composed_transform)
-		test_dataset = MNIST_M(root=root_dir, train=False, transform=composed_transform)
-
-		print('Size of train dataset: %d' % len(train_dataset))
-		print('Size of test dataset: %d' % len(test_dataset))
-
-		train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
-		test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
-
-		# def imshow(img):
-		#     npimg = img.numpy()
-		#     plt.imshow(np.transpose(npimg, (1, 2, 0)))
-		#     # plt.show()
-
-		train_dataiter = iter(train_loader)
-		train_images, train_labels = train_dataiter.next()
-		print("Train images", train_images)
-		print("Train images", train_labels)
-		# imshow(torchvision.utils.make_grid(train_images))
-
-		test_dataiter = iter(test_loader)
-		test_images, test_labels = test_dataiter.next()
-		print("Test images", test_labels)
-		# imshow(torchvision.utils.make_grid(test_images))
->>>>>>> fc9af6d7a78531b2f9f5e2b70400e4680faf329d
+	# imshow(torchvision.utils.make_grid(test_images))

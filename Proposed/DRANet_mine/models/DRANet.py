@@ -9,7 +9,7 @@ from .batchinstancenorm import BatchInstanceNorm2d as Normlayer
 import functools
 from functools import partial
 import torchvision.transforms as ttransforms
-
+from torchvision.models import resnet50, ResNet50_Weights
 
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels, filters=64, kernel_size=3, stride=1, padding=1):
@@ -34,7 +34,6 @@ class ResidualBlock(nn.Module):
         output += self.shortcut(x)
         return output
 
-
 class Encoder(nn.Module):
     def __init__(self, channels=3):
         super(Encoder, self).__init__()
@@ -52,7 +51,6 @@ class Encoder(nn.Module):
     def forward(self, x):
         output = self.model(x)
         return output
-
 
 class Separator(nn.Module):
     def __init__(self, imsize, converts, ch=64, down_scale=2):
@@ -98,11 +96,9 @@ class Generator(nn.Module):
     def forward(self, content, style):
         return self.model(content+style)
 
-
 class Classifier(nn.Module):
-    def __init__(self, train, channels=3, num_classes=10):
+    def __init__(self, channels=3, num_classes=10):
         super(Classifier, self).__init__()
-        self.tran = train
         self.conv = nn.Sequential(
             nn.Conv2d(channels, 32, kernel_size=5, stride=1, padding=2, bias=True),
             nn.ReLU(True),
@@ -119,17 +115,33 @@ class Classifier(nn.Module):
             nn.Linear(100, num_classes)
         )
 
-    
     def forward(self, x):
-        f_map = self.conv(x)
-        output = output.view(f_map.size(0), -1)    # representation
-        output = self.fc(output)                    # logit
-        if self.train:
-            return output
-        else:
-            return output, f_map
+        output = self.conv(x)
+        output = output.view(output.size(0), -1)
+        output = self.fc(output)
+        return output
 
+class Classifier_OfficeHome(nn.Module):
+    # 224, 224
+    def __init__(self, num_cls):
+        super(Classifier_OfficeHome, self).__init__()
+        self.model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)        
+        in_dim = self.model.fc.in_features   # 2048
 
+        self.fc = nn.Sequential(
+            nn.Linear(in_dim, 1024),
+            nn.ReLU(),
+            nn.Linear(1024, 512),
+            nn.ReLU(),
+            nn.Linear(512, 256),
+            nn.Linear(256, num_cls))
+
+    def forward(self, input):
+        feature = self.model(input)
+        output  = self.fc(feature)
+
+        return output
+    
 class VGG19(nn.Module):
     def __init__(self):
         super(VGG19, self).__init__()
@@ -168,7 +180,6 @@ class VGG19(nn.Module):
         out = (h_relu_1_1, h_relu_2_1, h_relu_3_1, h_relu_4_1, h_relu_4_2)
         return out
 
-
 class Discriminator_USPS(nn.Module):
     def __init__(self, channels=3):
         super(Discriminator_USPS, self).__init__()
@@ -192,7 +203,6 @@ class Discriminator_USPS(nn.Module):
         output = output.view(output.size(0), -1)
         output = self.fc(output)
         return output
-
 
 class Discriminator_MNIST(nn.Module):
     def __init__(self, channels=3):
@@ -224,23 +234,22 @@ class Discriminator_MNIST(nn.Module):
         output = self.fc(output)
         return output
 
+class Discriminator_OfficeHome(nn.Module):
+    # 224, 224
+    def __init__(self):
+        super(Discriminator_OfficeHome, self).__init__()
+        self.model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)        
+        in_dim = self.model.fc.in_features   # 2048
 
-class PatchGAN_Discriminator(nn.Module):
-    def __init__(self, channels=3):
-        super(PatchGAN_Discriminator, self).__init__()
-        self.model = nn.Sequential(
-            spectral_norm(nn.Conv2d(channels, 64, kernel_size=4, stride=2, padding=1, bias=True)),
-            nn.LeakyReLU(negative_slope=0.2, inplace=True),
-            spectral_norm(nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1, bias=True)),
-            nn.LeakyReLU(negative_slope=0.2, inplace=True),
-            spectral_norm(nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1, bias=True)),
-            nn.LeakyReLU(negative_slope=0.2, inplace=True),
-            spectral_norm(nn.Conv2d(256, 512, kernel_size=4, stride=2, padding=1, bias=True)),
-            nn.LeakyReLU(negative_slope=0.2, inplace=True),
-            spectral_norm(nn.Conv2d(512, 1, kernel_size=4, stride=2, padding=1, bias=True)),
-            nn.LeakyReLU(negative_slope=0.2, inplace=True),
-        )
+        self.fc = nn.Sequential(
+            nn.Linear(in_dim, 1024),
+            nn.ReLU(),
+            nn.Linear(1024, 512),
+            nn.ReLU(),
+            nn.Linear(512, 256),
+            nn.Linear(256, 1))
 
-    def forward(self, x):
-        return self.model(x)
-
+    def forward(self, input):
+        feature = self.model(input)
+        output  = self.fc(feature)
+        return output
