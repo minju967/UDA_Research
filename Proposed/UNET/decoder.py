@@ -7,42 +7,52 @@ class Decoder(nn.Module):
         super(Decoder, self).__init__()
         self.D_convt_1 = nn.Sequential(
                         nn.ConvTranspose2d(512, 512, 3),
+                        nn.BatchNorm2d(512),
                         nn.ReLU())
         self.D_conv_1 = nn.Sequential(
                         nn.Conv2d(1024, 512, 3, 1, 1),
+                        nn.BatchNorm2d(512),
                         nn.ReLU())
         
         self.D_convt_2 = nn.Sequential(
                         nn.ConvTranspose2d(512, 256, 3, stride=2, padding=1, output_padding=1),
+                        nn.BatchNorm2d(256),
                         nn.ReLU())
         self.D_conv_2 = nn.Sequential(
                         nn.Conv2d(512, 256, 3, 1, 1),
+                        nn.BatchNorm2d(256),
                         nn.ReLU())
 
         self.D_convt_3 = nn.Sequential(
                         nn.ConvTranspose2d(256, 128, 3, stride=2, padding=1, output_padding=1),
+                        nn.BatchNorm2d(128),
                         nn.ReLU())
         self.D_conv_3 = nn.Sequential(
                         nn.Conv2d(256, 128, 3, 1, 1),
+                        nn.BatchNorm2d(128),
                         nn.ReLU())
 
         self.D_convt_4 = nn.Sequential(
                         nn.ConvTranspose2d(128, 64, 3, stride=2, padding=1, output_padding=1),
+                        nn.BatchNorm2d(64),
                         nn.ReLU())
         self.D_conv_4 = nn.Sequential(
                         nn.Conv2d(128, 64, 3, 1, 1),
+                        nn.BatchNorm2d(64),
                         nn.ReLU())
 
         self.D_convt_5 = nn.Sequential(
                         nn.ConvTranspose2d(64, 32, 3, stride=2, padding=1, output_padding=1),
+                        nn.BatchNorm2d(32),
                         nn.ReLU())
         self.D_conv_5 = nn.Sequential(
                         nn.Conv2d(64, 32, 3, 1, 1),
+                        nn.BatchNorm2d(32),
                         nn.ReLU())
 
         self.convt_6 = nn.Sequential(
                         nn.ConvTranspose2d(32, 3, 3, stride=2, padding=1, output_padding=1),
-                        nn.ReLU())
+                        nn.Sigmoid())
     
     def forward(self, code, latents):
         output1 = self.D_convt_1(code)
