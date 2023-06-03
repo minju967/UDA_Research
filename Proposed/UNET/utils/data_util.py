@@ -10,7 +10,11 @@ def is_image_file(filename):
     return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
 
 def get_imagelist(domain):
+<<<<<<< HEAD
     path = f'D:\\UDA_research\\Dataset\\OfficeHomeDataset\\{domain}' 
+=======
+    path = f'C:\\Users\\MINJU\\UDA_res\\Dataset\\domain_adaptation_images\\{domain}\\images' 
+>>>>>>> a0d0566c23dc59e4d6d839ebd8fd86995ebf71ed
     total = 0
     trains = []
     tests  = []
