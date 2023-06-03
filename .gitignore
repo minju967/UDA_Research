@@ -4,10 +4,15 @@
 *.pyc
 *.log
 *.png
+*.pt
+*.json
 
-data
+# data
+# Dataset
+checkpoint
+tensorboard
 Dataset
-# checkpoint
-# tensorboard
-
-mine-pytorch
+Proposed/code
+Proposed/GAN
+Proposed/paper
+Proposed/DRANet_mine

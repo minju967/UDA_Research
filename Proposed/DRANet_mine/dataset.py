@@ -68,7 +68,7 @@ def get_dataset_NB(dataset, batch, imsize, workers):
 
 def get_dataset_OH(dataset, batch, imsize, workers):
     cls_dict = {'A':'Art', 'CA':'Clipart', 'P':'Product', 'R':'Real World'}
-    root      = 'C:\\Users\\MINJU\\UDA_res\\Dataset\\OfficeHomeDataset'
+    root      = 'D:\\UDA_research\\Dataset\\OfficeHomeDataset'
     path      = os.path.join(root, cls_dict[dataset])
     transform = transforms.Compose([
                                    transforms.Resize(imsize),
